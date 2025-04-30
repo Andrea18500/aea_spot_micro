@@ -8,3 +8,7 @@ venv/
 ppo_spotmicroai.zip
 __pycache__
 spotmicroai.urdf
+*.zip
+ppo*
+*.png
+logs

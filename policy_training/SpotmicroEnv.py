@@ -139,8 +139,14 @@ class SpotmicroEnv(gym.Env):
                 - truncated (bool): Whether the episode was artificially terminated.
                 - info (dict): Contains auxiliary diagnostic information.
         """
-        
-        observation = self._step_simulation(action)
+        counter = 0
+        if counter == 3:
+            observation = self._step_simulation(action)
+            counter = 0
+        else:
+            counter += 1
+            observation = self._step_simulation(self._previous_action)
+            
         reward = self._calculate_reward(action)
         terminated = self._is_target_state(self._agent_state) # checks wether the agent has fallen or not
         truncated = self._is_terminated()

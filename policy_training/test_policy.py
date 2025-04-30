@@ -8,7 +8,7 @@ env = SpotmicroEnv(use_gui=True)
 obs, _ = env.reset()
 
 # Load your trained model
-model = PPO.load("ppo_spotmicroai")  # or path to your .zip
+model = PPO.load("ppo_stand10k.debug1")  # or path to your .zip
 
 # Run rollout
 for _ in range(1000):

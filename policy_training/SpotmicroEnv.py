@@ -11,6 +11,8 @@ class SpotmicroEnv(gym.Env):
         self._OBS_SPACE_SIZE = 94
         self._ACT_SPACE_SIZE = 12
         self._MAX_EPISODE_LEN = 1000
+        self._SIM_FREQUENCY = 240
+        self._CONTROL_FREQUENCY = 60
 
         self._step_counter = 0
         self._robot_id = None
@@ -20,7 +22,6 @@ class SpotmicroEnv(gym.Env):
         self._previous_action = np.zeros(self._ACT_SPACE_SIZE, dtype=np.float32)
         self.physics_client = None
         self.use_gui = use_gui
-        self._time_step = 1/240.
 
         self._tilt_step = None #Keep track of where the plane is at (only needed in the tilting plane simulation)
         self._tilt_phase = None
@@ -68,7 +69,7 @@ class SpotmicroEnv(gym.Env):
         
         super().reset(seed=seed)
         self._step_counter = 0
-        self._agent_state["base_position"] = (0.0 , 0.0, 0.4)
+        self._agent_state["base_position"] = (0.0 , 0.0, 0.24)
         self._agent_state["base_orientation"] = pybullet.getQuaternionFromEuler([0,0,0])
         self._agent_state["linear_velocity"] = 0.0
         self._agent_state["angular_velocity"] = 0.0
@@ -87,7 +88,7 @@ class SpotmicroEnv(gym.Env):
 
         pybullet.resetSimulation(physicsClientId=self.physics_client)
         pybullet.setGravity(0, 0, -9.81, physicsClientId=self.physics_client)
-        pybullet.setTimeStep(self._time_step, physicsClientId=self.physics_client)
+        pybullet.setTimeStep(1/self._SIM_FREQUENCY, physicsClientId=self.physics_client)
 
         #load robot URDF here
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -140,13 +141,13 @@ class SpotmicroEnv(gym.Env):
                 - info (dict): Contains auxiliary diagnostic information.
         """
         counter = 0
-        if counter == 3:
+        if counter == int(self._SIM_FREQUENCY / self._CONTROL_FREQUENCY) - 1:
             observation = self._step_simulation(action)
             counter = 0
         else:
             counter += 1
             observation = self._step_simulation(self._previous_action)
-            
+
         reward = self._calculate_reward(action)
         terminated = self._is_target_state(self._agent_state) # checks wether the agent has fallen or not
         truncated = self._is_terminated()

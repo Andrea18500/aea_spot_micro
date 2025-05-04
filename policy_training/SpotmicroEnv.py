@@ -250,6 +250,7 @@ class SpotmicroEnv(gym.Env):
             )
         
         self._step_counter += 1 #updates the step counter (used to check against timeouts)
+        self._tilt_plane()
         pybullet.stepSimulation()
 
         self._update_agent_state()
@@ -417,36 +418,16 @@ class SpotmicroEnv(gym.Env):
 
     #@TODO: implement a well thought reward function
     def _calculate_reward(self, action: np.ndarray) -> tuple[float, dict]:
+        height = self._agent_state["base_position"][2]
         roll, pitch, _ = pybullet.getEulerFromQuaternion(self._agent_state["base_orientation"])
-        base_height = self._agent_state["base_position"][2]
 
-        uprightness = 1.0 - (abs(roll) + abs(pitch)) / np.radians(60)
-        uprightness = np.clip(uprightness, 0.0, 1.0)
-        height_error = abs(base_height - self._TARGET_HEIGHT)
+        # Encourage upright posture
+        uprightness = 1.0 - (abs(roll) + abs(pitch))
+        height_bonus = max(0.0, height - 0.15)  # Don't reward when falling
 
-        action_penalty = np.arctan(np.linalg.norm(action)) #might look into forces?. Penalize also joint saturation
-        penalty_scale = 1.0 - np.exp(-1e-6 * self._total_steps_counter)
-
-        fwd_reward = np.dot(self._agent_state["linear_velocity"], self._TARGET_DIRECTION) / (np.linalg.norm(self._agent_state["linear_velocity"]) + 1e-8)
-        
-        # Gating conditions: must be upright and at good height
-        is_standing = (0.20 <= base_height <= 0.26) and (abs(roll) < np.radians(30)) and (abs(pitch) < np.radians(30))
-
-        if is_standing:
-            if len(self._agent_state["ground_feet_contacts"]) >= 3:
-                contact_reward = 1.0
-            else:
-                contact_reward = -0.2
-        else:
-            contact_reward = -0.5  # Penalize contact when collapsed
-            
-        # Each reward component
         reward_dict = {
-            "fwd_reward": 10 * (1 - penalty_scale) * fwd_reward,
-            "height_penalty": 3 * height_error,
-            "contact_reward": 0 * contact_reward,
-            "uprightness": 3 * uprightness,
-            "action_penalty": - 1 * penalty_scale * action_penalty
+            "uprighntess_reward": uprightness,
+            "height_bonus": height_bonus
         }
 
         total_reward = sum(reward_dict.values())

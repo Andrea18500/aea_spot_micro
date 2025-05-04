@@ -24,6 +24,8 @@ class SpotmicroEnv(gym.Env):
         self._OBS_SPACE_SIZE = 94
         self._ACT_SPACE_SIZE = 12
         self._MAX_EPISODE_LEN = 3000
+        self._SIM_FREQUENCY = 240
+        self._CONTROL_FREQUENCY = 60
         self._TARGET_DIRECTION = np.array([1.0, 0.0, 0.0])
         self._TARGET_HEIGHT = 0.235
         self._SURVIVAL_REWARD = 15.0
@@ -111,6 +113,7 @@ class SpotmicroEnv(gym.Env):
 
         pybullet.resetSimulation(physicsClientId=self.physics_client)
         pybullet.setGravity(0, 0, -9.81, physicsClientId=self.physics_client)
+        pybullet.setTimeStep(1/self._SIM_FREQUENCY, physicsClientId=self.physics_client)
         pybullet.setTimeStep(1/self._SIM_FREQUENCY, physicsClientId=self.physics_client)
 
         #load robot URDF here
